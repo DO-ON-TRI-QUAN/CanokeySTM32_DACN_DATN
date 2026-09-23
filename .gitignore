@@ -3,3 +3,6 @@ armbuild/
 build-arm/
 cmake-build-*/
 Inc/git-rev.h
+*.md
+!README.md
+*.txt
