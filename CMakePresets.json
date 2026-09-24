@@ -1,0 +1,27 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "release",
+      "displayName": "Release (STM32L432KC)",
+      "description": "Firmware build. -Os with full debug info, so this preset is also the one to debug with.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "${sourceDir}/toolchain.cmake",
+      "cacheVariables": {
+        "CROSS_COMPILE": "arm-none-eabi-",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "release",
+      "displayName": "Release",
+      "configurePreset": "release",
+      "targets": [ "canokey.bin" ]
+    }
+  ]
+}

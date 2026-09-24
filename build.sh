@@ -32,17 +32,13 @@ echo
 echo "=============================================="
 echo " 3/5  Configuring"
 echo "=============================================="
-mkdir -p build
-cd build
-
-# CMAKE_POLICY_VERSION_MINIMUM is required because STM32CubeIDE ships CMake 4,
-# which rejects the older cmake_minimum_required() inside mbedtls.
-cmake -G Ninja \
-      -DCROSS_COMPILE="$CUBE_BIN/arm-none-eabi-" \
-      -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-      ..
+# All settings live in CMakePresets.json, so this script, STM32CubeIDE and
+# anyone building by hand all use exactly the same configuration.
+#
+# The preset uses the bare prefix "arm-none-eabi-" rather than a full path.
+# env.sh above put the compiler on PATH, and CubeIDE does the same for its own
+# builds, so the same preset works in both places on any machine.
+cmake --preset release
 
 echo
 echo "=============================================="
@@ -71,7 +67,9 @@ echo
 echo "=============================================="
 echo " 5/5  Building"
 echo "=============================================="
-cmake --build . --target canokey.bin
+cmake --build --preset release
+
+cd "$REPO_ROOT/build"
 
 echo
 echo "=============================================="

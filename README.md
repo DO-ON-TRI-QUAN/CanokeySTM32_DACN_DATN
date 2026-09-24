@@ -21,6 +21,78 @@ It works on modern Linux/Windows/macOS operating systems without additional driv
 
 **A SECURE VERSION CAN BE FOUND AT https://canokeys.org**
 
+---
+
+## Building this fork (STYL Solutions)
+
+This fork differs from upstream in two ways that matter before you build:
+
+1. **There are no git submodules.** All dependencies are normal files in this
+   repository. A plain `git clone` gives you a complete tree. Do not run
+   `git submodule` commands.
+2. **The build is driven by a script.** It handles the STM32CubeIDE tool paths,
+   a required CMake 4 compatibility flag, and a verification step that upstream
+   does not have.
+
+### Requirements
+
+- **STM32CubeIDE** — supplies the ARM compiler, CMake and Ninja. Nothing else
+  to install. Tested with 2.1.1 on Windows.
+- **Git for Windows** — supplies Git Bash and GNU `patch`.
+
+### Build
+
+In Git Bash:
+
+```shell
+git clone <this-repository-url> cano-key
+cd cano-key
+./build.sh
+```
+
+The result is `build/canokey.bin`. Flash it with STM32CubeProgrammer or
+ST-LINK.
+
+The first build takes several minutes.
+
+### What build.sh does
+
+1. `env.sh` locates the compiler, CMake and Ninja inside your STM32CubeIDE
+   installation and puts them on `PATH`.
+2. Deletes `build/` and `canokey-core/canokey-crypto/patched/`.
+3. Runs CMake with `-DCMAKE_POLICY_VERSION_MINIMUM=3.5`. STM32CubeIDE ships
+   CMake 4, which rejects the older `cmake_minimum_required` declared by the
+   vendored mbedtls. Without this flag the configure step fails.
+4. **Verifies the mbedtls Ed25519 patch applied**, and stops if it did not.
+5. Builds `canokey.bin` and prints Flash and RAM usage.
+
+**Do not remove step 4.** The build copies mbedtls into a `patched/` folder and
+runs `patch` on it, but never checks the result. If that patch fails, the
+firmware compiles and runs, then fails the moment OpenPGP touches an Ed25519
+key — and the failure looks like a firmware bug, not a build problem.
+
+**Do not skip step 2 either.** Leaving `patched/` in place makes the next
+configure try to patch already-patched files, which lands you in the case
+above.
+
+### Build options
+
+| Option | Default | Effect |
+|---|---|---|
+| `-DENABLE_DEBUG_OUTPUT=ON` | ON | Debug messages on USART2 (PA2/PA15). Also enables the UART touch emulator: send `T` for a short touch, `L` for a long touch. |
+| `-DENABLE_DUMB_DONGLE=ON` | OFF | **Removes all user-presence checks.** Development only. |
+
+`ENABLE_DUMB_DONGLE` does more than skip the touch wait. It also makes
+`strong_user_presence_test()` succeed with no user action, and that function
+guards sensitive admin operations. Any test run with it on proves nothing
+about user presence. It must be off in any build presented as the real
+implementation.
+
+On a NUCLEO-L432KC board, which has no touch sensor, prefer the UART touch
+emulator above — it exercises the real presence path.
+
+---
+
 ## Hardware
 
 This CanoKey-STM32 implementation is based on STM32L432KC MCU, which features a Cortex-M4 processor, 256KiB Flash, 64 KiB SRAM, and a full-speed USB controller. 
