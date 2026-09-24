@@ -1,11 +1,25 @@
 {
   "version": 3,
   "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+
   "configurePresets": [
     {
       "name": "release",
-      "displayName": "Release (STM32L432KC)",
-      "description": "Firmware build. -Os with full debug info, so this preset is also the one to debug with.",
+      "displayName": "Release (STM32CubeIDE)",
+      "description": "Used by STM32CubeIDE. Builds into release/. -Os with full debug info, so this is also the configuration to debug with.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/release",
+      "toolchainFile": "${sourceDir}/toolchain.cmake",
+      "cacheVariables": {
+        "CROSS_COMPILE": "arm-none-eabi-",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
+      }
+    },
+    {
+      "name": "cli-release",
+      "displayName": "Release (command line)",
+      "description": "Used by build.sh. Same settings as 'release' but builds into build/, so the script and the IDE never touch each other's files.",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "toolchainFile": "${sourceDir}/toolchain.cmake",
@@ -16,12 +30,9 @@
       }
     }
   ],
+
   "buildPresets": [
-    {
-      "name": "release",
-      "displayName": "Release",
-      "configurePreset": "release",
-      "targets": [ "canokey.bin" ]
-    }
+    { "name": "release",     "displayName": "Release (STM32CubeIDE)",  "configurePreset": "release" },
+    { "name": "cli-release", "displayName": "Release (command line)",  "configurePreset": "cli-release" }
   ]
 }

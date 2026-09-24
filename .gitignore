@@ -2,6 +2,10 @@ build/
 armbuild/
 build-arm/
 cmake-build-*/
+config_default/
+release/
+release_*/
+debug/
 Inc/git-rev.h
 *.md
 !README.md

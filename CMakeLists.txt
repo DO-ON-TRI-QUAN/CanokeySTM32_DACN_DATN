@@ -48,6 +48,18 @@ add_custom_target(gitrev
 add_custom_command(TARGET canokey POST_BUILD
     COMMAND "${CROSS_COMPILE}size" canokey)
 
+# Always produce canokey.bin and canokey.hex alongside the ELF, so the default
+# build target is enough on its own. STM32CubeIDE builds only the default
+# target; without this it produces the ELF and no flashable image.
+add_custom_command(TARGET canokey POST_BUILD
+    COMMAND "${CROSS_COMPILE}objcopy" -O binary -S $<TARGET_FILE:canokey> canokey.bin
+    COMMAND "${CROSS_COMPILE}objcopy" -O ihex   -S $<TARGET_FILE:canokey> canokey.hex
+    COMMENT "Creating canokey.bin and canokey.hex")
+# No BYPRODUCTS here on purpose: the add_custom_target(canokey.bin) below
+# already claims that file name, and declaring it twice makes Ninja fail with
+# "multiple rules generate canokey.bin".
+
+# Kept because the dfu / flash / cubeflash targets below depend on this name.
 add_custom_target(canokey.bin
     DEPENDS canokey
     COMMAND "${CROSS_COMPILE}objcopy" -O binary -S canokey canokey.bin)

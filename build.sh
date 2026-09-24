@@ -32,13 +32,17 @@ echo
 echo "=============================================="
 echo " 3/5  Configuring"
 echo "=============================================="
-# All settings live in CMakePresets.json, so this script, STM32CubeIDE and
-# anyone building by hand all use exactly the same configuration.
+# Settings live in CMakePresets.json.
 #
-# The preset uses the bare prefix "arm-none-eabi-" rather than a full path.
+# This script uses the 'cli-release' preset, which builds into build/.
+# STM32CubeIDE uses the 'release' preset, which builds into release/.
+# Same compiler and flags; separate directories, so the two never overwrite
+# each other's files.
+#
+# The presets use the bare prefix "arm-none-eabi-" rather than a full path.
 # env.sh above put the compiler on PATH, and CubeIDE does the same for its own
-# builds, so the same preset works in both places on any machine.
-cmake --preset release
+# builds, so the presets work on any machine with STM32CubeIDE installed.
+cmake --preset cli-release
 
 echo
 echo "=============================================="
@@ -67,7 +71,7 @@ echo
 echo "=============================================="
 echo " 5/5  Building"
 echo "=============================================="
-cmake --build --preset release
+cmake --build --preset cli-release
 
 cd "$REPO_ROOT/build"
 
@@ -75,10 +79,14 @@ echo
 echo "=============================================="
 echo " Done"
 echo "=============================================="
-ls -l canokey.bin
+ls -l canokey canokey.bin canokey.hex
 echo
 echo "Size (Flash = text + data, RAM at startup = data + bss):"
 arm-none-eabi-size canokey
 echo
 echo "Chip limits: 256 KiB Flash (262144 bytes), 64 KiB SRAM (65536 bytes)."
-echo "Firmware image: $REPO_ROOT/build/canokey.bin"
+echo
+echo "Outputs in $REPO_ROOT/build/ :"
+echo "  canokey       ELF, for the debugger"
+echo "  canokey.bin   raw binary, flash at 0x08000000"
+echo "  canokey.hex   Intel HEX, address is inside the file"
