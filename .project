@@ -3,6 +3,7 @@
 	<name>cano-key</name>
 	<comment></comment>
 	<projects>
+		<project>canoKey</project>
 	</projects>
 	<buildSpec>
 	</buildSpec>
