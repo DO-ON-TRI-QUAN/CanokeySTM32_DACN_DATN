@@ -28,11 +28,26 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
       }
+    },
+    {
+      "name": "cli-dumb",
+      "displayName": "DUMB_DONGLE - user presence DISABLED",
+      "description": "Development only. All user-presence checks removed, including the touch confirmation that protects factory reset. Never use for a build presented as the real implementation.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build_dumb",
+      "toolchainFile": "${sourceDir}/toolchain.cmake",
+      "cacheVariables": {
+        "CROSS_COMPILE": "arm-none-eabi-",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "ENABLE_DUMB_DONGLE": "ON"
+      }
     }
   ],
 
   "buildPresets": [
     { "name": "release",     "displayName": "Release (STM32CubeIDE)",  "configurePreset": "release" },
-    { "name": "cli-release", "displayName": "Release (command line)",  "configurePreset": "cli-release" }
+    { "name": "cli-release", "displayName": "Release (command line)",  "configurePreset": "cli-release" },
+    { "name": "cli-dumb", "displayName": "DUMB_DONGLE", "configurePreset": "cli-dumb" }
   ]
 }

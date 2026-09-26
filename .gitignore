@@ -6,6 +6,8 @@ config_default/
 release/
 release_*/
 debug/
+build_*/ 
+debug_*/
 Inc/git-rev.h
 *.md
 !README.md
