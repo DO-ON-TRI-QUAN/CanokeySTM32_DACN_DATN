@@ -1,4 +1,6 @@
 build/
+build-wsl/
+build-wsl-dumb/
 armbuild/
 build-arm/
 cmake-build-*/
