@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="com.st.stm32cube.ide.cmake.cmakeTarget">
-				<src>C:\Study\cano-key</src>
+				<src>C:\USB_Security_Token-DACN_DATN\CanokeySTM32_DACN_DATN</src>
 				<build>release</build>
 				<generator>Ninja</generator>
 				<cmake_build_type>Release</cmake_build_type>
@@ -79,7 +79,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="com.st.stm32cube.ide.cmake.cmakeTarget">
-				<src>C:\Study\cano-key</src>
+				<src>C:\USB_Security_Token-DACN_DATN\CanokeySTM32_DACN_DATN</src>
 				<build>build_dumb</build>
 				<generator>Ninja</generator>
 				<cmake_build_type>Release</cmake_build_type>

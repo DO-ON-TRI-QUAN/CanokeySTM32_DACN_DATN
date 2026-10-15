@@ -14,4 +14,7 @@ Inc/git-rev.h
 *.md
 !README.md
 *.txt
-.venv
+# EXCEPT requirements.txt, keep tracking it
+!requirements.txt
+.venv/
+.vscode/
