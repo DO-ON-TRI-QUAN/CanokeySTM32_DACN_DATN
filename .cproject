@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="com.st.stm32cube.ide.cmake.cmakeTarget">
-				<src>C:\Study\cano-key</src>
+				<src>C:\Users\STYLVN\test\cano-key</src>
 				<build>release</build>
 				<generator>Ninja</generator>
 				<cmake_build_type>Release</cmake_build_type>
