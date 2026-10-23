@@ -93,6 +93,164 @@ emulator above — it exercises the real presence path.
 
 ---
 
+## Attestation Provisioning
+
+This section describes how to provision the attestation key and certificate to the CanoKey STM32 device after flashing the firmware.
+
+### File Locations
+
+Place the provisioning files in `canokey-stm32/utils/`, alongside `device-config-init.sh`.
+
+The default mode of `provision_attestation.py` reads the demo key and certificate directly from `device-config-init.sh`, so you do not need to copy the long hexadecimal values manually. This also makes it clear which values correspond to the demo identity.
+
+Create the Python virtual environment at the project root and exclude it from version control.
+
+```text
+canokey-stm32/
+├── .venv/
+├── .gitignore
+└── utils/
+    ├── device-config-init.sh
+    ├── provision_attestation.py
+    └── requirements.txt
+```
+
+Ensure `.gitignore` contains:
+
+```gitignore
+.venv/
+```
+
+### Step 0: One-Time Setup
+
+Run these commands in **PowerShell from the project root**.
+
+1. **Install Python 3.** Download it from [python.org](https://www.python.org/downloads/) and enable **Add python.exe to PATH** during installation.
+
+   Verify the installation:
+
+   ```powershell
+   python --version
+   ```
+
+2. **Create the virtual environment.**
+
+   ```powershell
+   python -m venv .venv
+   ```
+
+3. **Activate the virtual environment.**
+
+   ```powershell
+   .venv\Scripts\Activate.ps1
+   ```
+
+   If PowerShell blocks script execution, run the following command once:
+
+   ```powershell
+   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+   ```
+
+   Alternatively, use Command Prompt and activate the environment with:
+
+   ```bat
+   .venv\Scripts\activate.bat
+   ```
+
+4. **Install the required packages.**
+
+   ```powershell
+   pip install -r utils\requirements.txt
+   ```
+
+   If `pyscard` fails to build, first upgrade `pip` and retry:
+
+   ```powershell
+   python -m pip install --upgrade pip
+   pip install -r utils\requirements.txt
+   ```
+
+   If the build still fails, a missing C++ build toolchain may be the cause.
+
+**For subsequent sessions, only activate the existing virtual environment.**
+
+### Step 1: Flash the Firmware
+
+Build and flash the firmware using STM32CubeIDE.
+
+Make sure the firmware is built with `ENABLE_DUMB_DONGLE` enabled, since the device does not yet have a touch sensor.
+
+### Step 2: Connect the Device
+
+Connect the token's **USB interface to the PC**, not just the ST-LINK debugging interface.
+
+After connecting, Windows should enumerate the device again. Open Device Manager and verify that it appears as a smart card reader. A HID device should also appear for FIDO functionality.
+
+### Step 3: Detect the Smart Card Reader
+
+Open a terminal and navigate to the utilities directory:
+
+```powershell
+cd utils
+```
+
+Activate the virtual environment if it is not already active, then list the available readers:
+
+```powershell
+python provision_attestation.py --list
+```
+
+The output should include a reader whose name contains `Canokeys`.
+
+If no readers are listed, check the following:
+
+- The token is connected through its own USB interface.
+- The device appears in Windows Device Manager.
+- The Windows **Smart Card** service is running.
+
+### Step 4: Provision the Attestation Data
+
+Run the provisioning script in its default mode:
+
+```powershell
+python provision_attestation.py
+```
+
+The script should report `[OK]` for the following operations:
+
+- Selecting the applet
+- Verifying the PIN
+- Writing the serial number
+- Writing the attestation key
+- Writing the attestation certificate
+
+The NFC configuration operations may report `WARN` with status word `6F00`. This is expected when the NFC chip is not present, consistent with the original provisioning log.
+
+### Step 5: Verify the Device
+
+Test the token on a WebAuthn-compatible website, such as [webAuthn.me](https://webauthn.me/) or GitHub's security settings.
+
+Confirm that the device can be detected and used for authentication.
+
+### Using Your Own Key and Certificate
+
+After generating your own `dev.key` and `dev.der` files using the OpenSSL commands in Git Bash, provision them with file mode:
+
+```powershell
+python provision_attestation.py --mode files --key dev.key --cert dev.der
+```
+
+Run this command from the `utils/` directory with the virtual environment activated. Generate the certificate in DER format as required by the script.
+
+### Troubleshooting and Notes
+
+- **Certificate write failures:** Writing the certificate uses a long, extended-length APDU command. Whether the Windows CCID driver passes this command through successfully cannot be determined in advance. If the operation fails, the script prints the error and stops. Keep the full error message for debugging.
+- **Provisioning after flashing:** Re-run the provisioning script after any firmware flash that erases or overwrites the filesystem region containing the attestation data.
+- **Demo identity:** Default mode provisions CanoKey's demo identity. This is suitable in the time being, but replace it with own identity before the final demonstration or deployment.
+- **NFC warnings:** The `6F00` warnings from NFC configuration are expected when the NFC chip is absent; they do not necessarily indicate that attestation provisioning has failed.
+
+---
+
 ## Hardware
 
 This CanoKey-STM32 implementation is based on STM32L432KC MCU, which features a Cortex-M4 processor, 256KiB Flash, 64 KiB SRAM, and a full-speed USB controller. 
