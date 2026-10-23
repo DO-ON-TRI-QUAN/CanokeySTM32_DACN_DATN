@@ -12,3 +12,4 @@ Inc/git-rev.h
 *.md
 !README.md
 *.txt
+*.pptx
