@@ -1,5 +1,5 @@
 # CanoKey on STM32
-[![Build Status](https://travis-ci.com/canokeys/canokey-stm32.svg?branch=master)](https://travis-ci.com/canokeys/canokey-stm32) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcanokeys%2Fcanokey-stm32.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcanokeys%2Fcanokey-stm32?ref=badge_shield)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcanokeys%2Fcanokey-stm32.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcanokeys%2Fcanokey-stm32?ref=badge_shield)
 
 CanoKey is an open-source USB/NFC security token, providing the following functions:
 
@@ -25,24 +25,22 @@ It works on modern Linux/Windows/macOS operating systems without additional driv
 
 ## Building this fork (STYL Solutions)
 
-This fork differs from upstream in two ways that matter before you build:
+This fork differs from upstream in three ways:
 
 1. **There are no git submodules.** All dependencies are normal files in this
    repository. A plain `git clone` gives you a complete tree. Do not run
    `git submodule` commands.
-2. **The build is driven by a script.** It handles the STM32CubeIDE tool paths,
-   a required CMake 4 compatibility flag, and a verification step that upstream
-   does not have.
+2. **`CMakePresets.json` holds the build settings.** STM32CubeIDE and
+   `build.sh` read the same presets and share the same build folders.
+3. **The build checks the mbedtls Ed25519 patch.** Upstream does not.
 
 ### Requirements
 
-- **STM32CubeIDE** — supplies the ARM compiler, CMake and Ninja. Nothing else
+- **STM32CubeIDE** supplies the ARM compiler, CMake and Ninja. Nothing else
   to install. Tested with 2.1.1 on Windows.
-- **Git for Windows** — supplies Git Bash and GNU `patch`.
+- **Git for Windows** supplies Git Bash and GNU `patch`.
 
-### Build
-
-In Git Bash:
+### Build from Git Bash
 
 ```shell
 git clone <this-repository-url> cano-key
@@ -50,37 +48,71 @@ cd cano-key
 ./build.sh
 ```
 
-The result is `build/canokey.bin`. Flash it with STM32CubeProgrammer or
-ST-LINK.
+| Command | Output folder |
+|---|---|
+| `./build.sh` | `build/release/` |
+| `./build.sh --dumb` | `build/dumb/` (user presence disabled, see below) |
+| `--clean` added to either | deletes that output folder first |
 
-The first build takes several minutes.
+Each output folder holds:
 
-### What build.sh does
+- `canokey`: ELF file, for the debugger
+- `canokey.bin`: raw image, flash at `0x08000000`
+- `canokey.hex`: Intel HEX, the address is inside the file
 
-1. `env.sh` locates the compiler, CMake and Ninja inside your STM32CubeIDE
-   installation and puts them on `PATH`.
-2. Deletes `build/` and `canokey-core/canokey-crypto/patched/`.
-3. Runs CMake with `-DCMAKE_POLICY_VERSION_MINIMUM=3.5`. STM32CubeIDE ships
-   CMake 4, which rejects the older `cmake_minimum_required` declared by the
-   vendored mbedtls. Without this flag the configure step fails.
-4. **Verifies the mbedtls Ed25519 patch applied**, and stops if it did not.
-5. Builds `canokey.bin` and prints Flash and RAM usage.
+The first build takes several minutes. Later builds recompile only changed
+files.
 
-**Do not remove step 4.** The build copies mbedtls into a `patched/` folder and
-runs `patch` on it, but never checks the result. If that patch fails, the
-firmware compiles and runs, then fails the moment OpenPGP touches an Ed25519
-key — and the failure looks like a firmware bug, not a build problem.
+### Build from STM32CubeIDE
 
-**Do not skip step 2 either.** Leaving `patched/` in place makes the next
-configure try to patch already-patched files, which lands you in the case
-above.
+| Configuration | Preset | Output folder |
+|---|---|---|
+| `release` | `release` | `build/release/` |
+| `debug_touchbypass` | `dumb` | `build/dumb/` |
+
+CubeIDE and `build.sh` share these folders. A build from one is reused by the
+other.
+
+### Build from WSL
+
+```shell
+./build-wsl.sh [--dumb] [--clean]
+```
+
+Output goes to `build/wsl-release/` or `build/wsl-dumb/`. WSL needs
+`gcc-arm-none-eabi`, CMake and Make. WSL keeps separate folders because its
+CMake cache stores Linux paths.
+
+### The mbedtls patch rule
+
+The build copies mbedtls into `canokey-core/canokey-crypto/patched/` and runs
+`patch` on it to add Ed25519 support. CMake never checks the result.
+
+- `build.sh` deletes `patched/` before every configure, then checks that the
+  patch applied. It stops if the patch is missing. **Do not remove this
+  check.** Without the patch, the firmware still compiles and runs, then fails
+  when OpenPGP uses an Ed25519 key. The failure looks like a firmware bug.
+- A configure that `build.sh` did not start reuses the old `patched/` folder.
+  The patch then fails on files that are already patched, with no error.
+  Configure through `./build.sh --clean`, then build from either place.
+
+### Adding or removing a source file
+
+CMake lists the files in `Src/` only during configure. After you add or remove
+a file, run `./build.sh --clean` (and `./build.sh --dumb --clean`) once.
+
+### Flash budget
+
+The linker script gives the firmware 190 KiB (194,560 bytes). The last 66 KiB
+of Flash holds littlefs storage. A Release build uses about 181,700 bytes, or
+93%. Read the size line after every build.
 
 ### Build options
 
 | Option | Default | Effect |
 |---|---|---|
 | `-DENABLE_DEBUG_OUTPUT=ON` | ON | Debug messages on USART2 (PA2/PA15). Also enables the UART touch emulator: send `T` for a short touch, `L` for a long touch. |
-| `-DENABLE_DUMB_DONGLE=ON` | OFF | **Removes all user-presence checks.** Development only. |
+| `-DENABLE_DUMB_DONGLE=ON` | OFF | **Removes all user-presence checks.** Development only. Set by the `dumb` preset. |
 
 `ENABLE_DUMB_DONGLE` does more than skip the touch wait. It also makes
 `strong_user_presence_test()` succeed with no user action, and that function
@@ -89,7 +121,12 @@ about user presence. It must be off in any build presented as the real
 implementation.
 
 On a NUCLEO-L432KC board, which has no touch sensor, prefer the UART touch
-emulator above — it exercises the real presence path.
+emulator above. It exercises the real presence path.
+
+### Expected linker warning
+
+`canokey has a LOAD segment with RWX permissions` comes from the linker script
+and does not stop the build.
 
 ---
 
@@ -178,7 +215,7 @@ Run these commands in **PowerShell from the project root**.
 
 Build and flash the firmware using STM32CubeIDE.
 
-Make sure the firmware is built with `ENABLE_DUMB_DONGLE` enabled, since the device does not yet have a touch sensor.
+Make sure the firmware is built with `ENABLE_DUMB_DONGLE` enabled, since the device does not yet have a touch sensor. Use the `debug_touchbypass` configuration in STM32CubeIDE, or `./build.sh --dumb`.
 
 ### Step 2: Connect the Device
 
@@ -253,7 +290,7 @@ Run this command from the `utils/` directory with the virtual environment activa
 
 ## Hardware
 
-This CanoKey-STM32 implementation is based on STM32L432KC MCU, which features a Cortex-M4 processor, 256KiB Flash, 64 KiB SRAM, and a full-speed USB controller. 
+This CanoKey-STM32 implementation is based on STM32L432KC MCU, which features a Cortex-M4 processor, 256KiB Flash, 64 KiB SRAM, and a full-speed USB controller. The linker script gives the firmware the first 190 KiB of Flash and littlefs the last 66 KiB.
 
 ### CanoKey NFC-A
 
@@ -277,24 +314,9 @@ The NFC and touch sensing functions are unavailable on NUCLEO board.
 ## Build and test
 ### Build the Firmware
 
-Prerequisites:
-
-- CMake >= 3.6
-- GNU ARM Embedded Toolchain, downloaded from [ARM](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
-- git (used to generate embedding version string)
-
-Build steps:
-
-```shell
-# clone this repo and all the submodules
-# in the top-level folder
-mkdir build
-cd build
-cmake -DCROSS_COMPILE=<path-to-toolchain>/bin/arm-none-eabi- \
-    -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake \
-    -DCMAKE_BUILD_TYPE=Release ..
-make canokey.bin
-```
+Upstream builds on Linux with plain CMake and git submodules. This fork has
+no submodules. Use **Building this fork** above. On Linux or WSL, use
+`./build-wsl.sh`.
 
 Then download the firmware file `canokey.bin` to the STM32 with flash programming tools (e.g., ST-Link Utility if you use the NUCLEO-L432KC, or the [dfu-util](https://github.com/z4yx/dfu-util), or the [WebDFU](https://dfu.canokeys.org)).
 
@@ -379,7 +401,7 @@ After initialization, you are free to use CanoKey with applications, such as:
 
 ### Internals
 
-The hardware-independent code (including applets, storage, cryptography and USB stack) is in a submodule named [canokey-core](https://github.com/canokeys/canokey-core).
+The hardware-independent code (including applets, storage, cryptography and USB stack) is in `canokey-core/`. It is a copy of upstream [canokey-core](https://github.com/canokeys/canokey-core), tracked as normal files.
 
 Major hardware-dependent components in this repo:
 
@@ -387,8 +409,9 @@ Major hardware-dependent components in this repo:
 - `Src/device.c`: Hardware operations called by canokey-core
 - `Src/lfs_init.c`: Flash operations used by file system
 - `Src/main.c`: Hardware initialization
-- `Src/usbd_conf.c`: USB interface
+- `Src/usb.c`: USB interface
 - `Src/retarget.c`: Glue logic between printf and UART
+- `Src/syscalls.c`: newlib system call stubs
 - `Src/admin_vendor.c`: Vendor-specific commands implementation
 
 ## Documentation

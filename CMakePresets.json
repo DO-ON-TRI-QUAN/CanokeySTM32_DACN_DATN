@@ -5,10 +5,10 @@
   "configurePresets": [
     {
       "name": "release",
-      "displayName": "Release (STM32CubeIDE)",
-      "description": "Used by STM32CubeIDE. Builds into release/. -Os with full debug info, so this is also the configuration to debug with.",
+      "displayName": "Release",
+      "description": "Shared by STM32CubeIDE and build.sh. -Os with full debug info.",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/release",
+      "binaryDir": "${sourceDir}/build/release",
       "toolchainFile": "${sourceDir}/toolchain.cmake",
       "cacheVariables": {
         "CROSS_COMPILE": "arm-none-eabi-",
@@ -17,37 +17,19 @@
       }
     },
     {
-      "name": "cli-release",
-      "displayName": "Release (command line)",
-      "description": "Used by build.sh. Same settings as 'release' but builds into build/, so the script and the IDE never touch each other's files.",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
-      "toolchainFile": "${sourceDir}/toolchain.cmake",
-      "cacheVariables": {
-        "CROSS_COMPILE": "arm-none-eabi-",
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
-      }
-    },
-    {
-      "name": "cli-dumb",
+      "name": "dumb",
       "displayName": "DUMB_DONGLE - user presence DISABLED",
-      "description": "Development only. All user-presence checks removed, including the touch confirmation that protects factory reset. Never use for a build presented as the real implementation.",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build_dumb",
-      "toolchainFile": "${sourceDir}/toolchain.cmake",
+      "description": "Development only. All user-presence checks removed, including factory reset confirmation. Shared by STM32CubeIDE and build.sh --dumb.",
+      "inherits": "release",
+      "binaryDir": "${sourceDir}/build/dumb",
       "cacheVariables": {
-        "CROSS_COMPILE": "arm-none-eabi-",
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
         "ENABLE_DUMB_DONGLE": "ON"
       }
     }
   ],
 
   "buildPresets": [
-    { "name": "release",     "displayName": "Release (STM32CubeIDE)",  "configurePreset": "release" },
-    { "name": "cli-release", "displayName": "Release (command line)",  "configurePreset": "cli-release" },
-    { "name": "cli-dumb", "displayName": "DUMB_DONGLE", "configurePreset": "cli-dumb" }
+    { "name": "release", "displayName": "Release",     "configurePreset": "release" },
+    { "name": "dumb",    "displayName": "DUMB_DONGLE", "configurePreset": "dumb" }
   ]
 }

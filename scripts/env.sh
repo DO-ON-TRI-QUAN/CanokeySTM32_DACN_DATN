@@ -3,13 +3,13 @@
 # on PATH for the current shell.
 #
 # Usage, from the repository root, in Git Bash:
-#     source ./env.sh
+#     source ./scripts/env.sh
 #
 # Run it once per terminal. It searches instead of hard-coding paths, so it
 # keeps working after a CubeIDE update and on a different machine.
 
 if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
-  echo "ERROR: run this with 'source ./env.sh', not './env.sh'."
+  echo "ERROR: run this with 'source ./scripts/env.sh', not './scripts/env.sh'."
   echo "Without 'source' the settings are lost when the script ends."
   exit 1
 fi
@@ -40,7 +40,7 @@ if [ -z "$CK_PLUGINS" ]; then
   echo "Locate it yourself with:"
   echo "    find /c -maxdepth 3 -type d -name STM32CubeIDE"
   echo "then re-run as:"
-  echo "    CK_PLUGINS=/c/<path>/STM32CubeIDE/plugins source ./env.sh"
+  echo "    CK_PLUGINS=/c/<path>/STM32CubeIDE/plugins source ./scripts/env.sh"
   return 1
 fi
 

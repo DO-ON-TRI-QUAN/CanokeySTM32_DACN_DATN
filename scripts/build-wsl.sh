@@ -1,25 +1,19 @@
 #!/usr/bin/env bash
-# WSL build wrapper for canokey.bin using plain CMake + Make.
-#
-# Usage:
-#   ./build-wsl.sh                  # default build, all features
-#   ./build-wsl.sh --dumb           # DUMB_DONGLE build (user presence DISABLED)
-#   ./build-wsl.sh --clean          # wipe that variant's build dir first
-#   ./build-wsl.sh --dumb --clean   # flags can be combined
-#
-# Optional: TOOLCHAIN=/path/to/toolchain/bin/arm-none-eabi- ./build-wsl.sh
+# Usage (WSL): ./scripts/build-wsl.sh [--dumb] [--clean]
+# Optional: TOOLCHAIN=/path/to/bin/arm-none-eabi- ./scripts/build-wsl.sh
 
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+REPO_ROOT="$(pwd)"
 
-BUILD_DIR=build-wsl
+BUILD_DIR=build/wsl-release
 EXTRA_CMAKE_ARGS=()
 CLEAN=0
 
 for arg in "$@"; do
   case "$arg" in
     --dumb)
-      BUILD_DIR=build-wsl-dumb
+      BUILD_DIR=build/wsl-dumb
       EXTRA_CMAKE_ARGS+=(-DENABLE_DUMB_DONGLE=ON)
       echo "WARNING: DUMB_DONGLE build. User-presence checks are disabled." \
            "Development only." >&2
@@ -29,7 +23,7 @@ for arg in "$@"; do
   esac
 done
 
-TOOLCHAIN="${TOOLCHAIN:-arm-none-eabi-}"   # bare prefix = compiler is on PATH
+TOOLCHAIN="${TOOLCHAIN:-arm-none-eabi-}"
 PATCHED=canokey-core/canokey-crypto/patched
 
 if ! command -v "${TOOLCHAIN}gcc" >/dev/null; then
@@ -41,22 +35,17 @@ if [[ $CLEAN -eq 1 ]]; then
   rm -rf "$BUILD_DIR"
 fi
 
-# Configure only when needed
 if [[ ! -f "$BUILD_DIR/CMakeCache.txt" ]]; then
-  # The mbedtls 'patched' copy must be removed before every configure,
-  # otherwise the Ed25519 patch fails silently.
+  # Patch fails on an already patched copy.
   rm -rf "$PATCHED"
 
-  mkdir -p "$BUILD_DIR"
-  (cd "$BUILD_DIR" && cmake \
+  cmake -S "$REPO_ROOT" -B "$BUILD_DIR" \
       -DCROSS_COMPILE="$TOOLCHAIN" \
-      -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake \
+      -DCMAKE_TOOLCHAIN_FILE="$REPO_ROOT/toolchain.cmake" \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-      ${EXTRA_CMAKE_ARGS[@]+"${EXTRA_CMAKE_ARGS[@]}"} \
-      ..)
+      ${EXTRA_CMAKE_ARGS[@]+"${EXTRA_CMAKE_ARGS[@]}"}
 
-  # Only applies to the branch that patches mbedtls
   ECP="$PATCHED/mbedtls/include/mbedtls/ecp.h"
   if [[ -d "$PATCHED" ]]; then
     if ! grep -q MBEDTLS_ECP_DP_ED25519 "$ECP" 2>/dev/null; then
