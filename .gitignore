@@ -1,4 +1,5 @@
 build/
+build_dumb/
 doc/
 cmake-build-*/
 .venv/
