@@ -22,6 +22,7 @@ add_definitions(-DCFG_TUSB_MCU=${TINYUSB_MCU})
 set(TINYUSB_DCD_SRC canokey-core/tinyusb/src/portable/st/stm32_fsdev/dcd_stm32_fsdev.c)
 aux_source_directory(Src SOURCE_CODE_COMMON)
 aux_source_directory(Drivers/STM32L4xx_HAL_Driver/Src SOURCE_CODE_BOARD)
+list(FILTER SOURCE_CODE_BOARD EXCLUDE REGEX "_template\\.c$")
 add_executable(canokey ${SOURCE_CODE_COMMON} ${SOURCE_CODE_BOARD} ${TINYUSB_DCD_SRC} ${STARTUP_ASM_FILE})
 target_link_libraries(canokey PRIVATE canokey-core c m nosys)
 
