@@ -12,8 +12,6 @@
 
 /* This file overrides functions defined in canokey-core/src/device.c */
 
-const uint32_t UNTOUCHED_MAX_VAL = 40; /* Suitable for 56K pull-down resistor */
-const uint32_t CALI_TIMES = 4;
 const uint32_t TOUCH_GAP_TIME = TOUCH_EXPIRE_TIME; /* Gap period (in ms) between two consecutive touch events */
 const uint32_t MIN_LONG_TOUCH_TIME = 500;
 const uint32_t MIN_TOUCH_TIME = 20;
@@ -23,7 +21,6 @@ extern SPI_HandleTypeDef FM_SPI;
 extern UART_HandleTypeDef DBG_UART;
 
 static volatile uint32_t blinking_until;
-static uint16_t touch_threshold = 14, measure_touch;
 static void (*tim_callback)(void);
 
 void device_delay(int ms) { HAL_Delay(ms); }
@@ -62,51 +59,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   }
 }
 
-void GPIO_Touch_Calibrate(void) {
-  uint32_t sum = 0;
-  for (int i = 0; i < CALI_TIMES; ++i) {
-    LL_GPIO_SetPinMode(TOUCH_GPIO_Port, TOUCH_Pin, GPIO_MODE_OUTPUT_PP);
-    LL_GPIO_SetOutputPin(TOUCH_GPIO_Port, TOUCH_Pin);
-
-    // charging the capacitor (human body)
-    for (int j = 0; j < 100; ++j)
-      asm volatile("nop");
-
-    __disable_irq();
-    // measure the time of discharging
-    LL_GPIO_SetPinMode(TOUCH_GPIO_Port, TOUCH_Pin, GPIO_MODE_INPUT);
-    while ((LL_GPIO_ReadInputPort(TOUCH_GPIO_Port) & TOUCH_Pin) && sum < UNTOUCHED_MAX_VAL * CALI_TIMES)
-      ++sum;
-    __enable_irq();
-    // DBG_MSG("val %u\n", sum);
-  }
-  if (sum == UNTOUCHED_MAX_VAL * CALI_TIMES) {
-    DBG_MSG("max limit exceeded, discarded. touch_threshold %u\n", touch_threshold);
-    return;
-  }
-
-  touch_threshold = sum / CALI_TIMES * 2;
-  DBG_MSG("touch_threshold %u\n", touch_threshold);
-}
-
-static GPIO_PinState GPIO_Touched(void) {
-  uint32_t counter = 0;
-  LL_GPIO_SetPinMode(TOUCH_GPIO_Port, TOUCH_Pin, GPIO_MODE_OUTPUT_PP);
-  LL_GPIO_SetOutputPin(TOUCH_GPIO_Port, TOUCH_Pin);
-  // charging the capacitor (human body)
-  for (int i = 0; i < 100; ++i)
-    asm volatile("nop");
-
-  __disable_irq();
-  // measure the time of discharging
-  LL_GPIO_SetPinMode(TOUCH_GPIO_Port, TOUCH_Pin, GPIO_MODE_INPUT);
-  while ((LL_GPIO_ReadInputPort(TOUCH_GPIO_Port) & TOUCH_Pin) /*  && counter <= touch_threshold */)
-    ++counter;
-  __enable_irq();
-
-  if (counter > measure_touch) measure_touch = counter;
-  return counter > touch_threshold ? GPIO_PIN_SET : GPIO_PIN_RESET;
-}
+static GPIO_PinState GPIO_Touched(void) { return HAL_GPIO_ReadPin(TOUCH_GPIO_Port, TOUCH_Pin); }
 
 void led_on(void) { HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); }
 
@@ -137,7 +90,6 @@ void device_periodic_task(void) {
     }
 #endif
     if(GPIO_Touched()) {
-      measure_touch = 0;
       fsm = TOUCH_STATE_DOWN;
       event_tick = tick;
     }
@@ -156,12 +108,11 @@ void device_periodic_task(void) {
     if (tick - event_tick >= TOUCH_GAP_TIME) {
       set_touch_result(TOUCH_NO);
       fsm = TOUCH_STATE_DEASSERT;
-      DBG_MSG("touch deassert, max value measured: %u\r\n", measure_touch);
+      DBG_MSG("touch deassert\r\n");
     }
     break;
   case TOUCH_STATE_DEASSERT:
     if(!GPIO_Touched()) {
-      measure_touch = 0;
       fsm = TOUCH_STATE_IDLE;
     }
     break;

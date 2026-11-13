@@ -333,7 +333,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  for (uint32_t i = 0;;) {
+  for (;;) {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -345,12 +345,7 @@ int main(void)
         set_nfc_state(in_nfc_mode); // comment out this line to emulate NFC mode with USB connection
       }
     } else {
-      if ((i & ((1 << 23) - 1)) == 0) {
-        DBG_MSG("Touch calibrating...\n");
-        GPIO_Touch_Calibrate();
-      }
       device_loop(1);
-      ++i;
     }
   }
   /* USER CODE END 3 */
