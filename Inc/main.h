@@ -66,10 +66,10 @@ int check_is_nfc_en(void);
 #define FM_IRQN_EXTI_IRQn EXTI0_IRQn
 #define FM_SSN_Pin GPIO_PIN_4
 #define FM_SSN_GPIO_Port GPIOA
+#define TOUCH_Pin GPIO_PIN_8
+#define TOUCH_GPIO_Port GPIOA
 #define LED_Pin GPIO_PIN_3
 #define LED_GPIO_Port GPIOB
-#define TOUCH_Pin GPIO_PIN_3
-#define TOUCH_GPIO_Port GPIOH
 /* USER CODE BEGIN Private defines */
 #define HW_CFG_Port GPIOB
 #define HW_CFG0_Pin GPIO_PIN_4
